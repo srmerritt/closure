@@ -14,9 +14,8 @@
                  :down [1 0]})
 
 (defn inbounds?
-  [grid [mx my] [x y]]
-  (and (< x mx) (>= x 0) (< y my) (>= y 0)
-       (not= :oob (get-in grid [x y]))))
+  [grid  [x y]]
+  (not (contains? #{nil :oob} (get-in grid [x y]))))
 
 (defn protagonist?
   [p]
@@ -24,7 +23,6 @@
 
 ;; Main overworld
 (def mploc [1 1])
-(def mbounds [3 5])
 (def mgrid [[:oob (cell/+) (cell/+) (cell/+) :oob]
             [(cell/+) (cell/+) (cell/+) (cell/+) (cell/+)]
             [:oob (cell/+) (cell/+) (cell/+) :oob]])
@@ -49,13 +47,13 @@
 
 ;; Returns the new grid, new ploc
 (defn move
-  [dir grid bounds loc]
+  [dir grid loc]
   (let [newloc (mapv + (dir directions) loc)]
     (cond
-      (inbounds? grid bounds newloc) [grid
-                                      newloc]
-      :default                       [grid
-                                      loc])))
+      (inbounds? grid newloc) [grid
+                               newloc]
+      :default                [grid
+                               loc])))
 
 (defn getch [screen]
   (let [c (s/get-key-blocking screen)]
@@ -78,7 +76,7 @@
                    (let [c (getch screen)]
                      (cond
                        (= c :escape)            (quit screen)
-                       (contains? directions c) (recur (move c grid mbounds ploc))
+                       (contains? directions c) (recur (move c grid ploc))
                        :else                    (recur state)))))))
 
 (defn -main [& args]
