@@ -19,16 +19,18 @@
 
 ;; Main overworld
 (def mploc [1 1])
-(def mprot :prot)
+(def mprot {:kind :prot})
 (def mgrid [[:oob (cell/new) (cell/new) (cell/new) :oob]
-            [(cell/new) (cell/new :prot) (cell/new) (cell/new) (cell/new)]
+            [(cell/new) (cell/new mprot) (cell/new) (cell/new) (cell/new)]
             [:oob (cell/new) (cell/new) (cell/new) :oob]])
 
 (defmulti cell-status identity)
 (defmethod cell-status :oob [_]
   :oob)
 (defmethod cell-status :default [c]
-  (cell/status c))
+  (cond
+    (cell/has? c :prot) :prot
+    :default            :empty))
 
 (defn draw
   [grid screen off]

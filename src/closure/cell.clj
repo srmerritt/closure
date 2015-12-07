@@ -17,14 +17,7 @@
   (dosync
     (commute c disj ent)))
 
-(defn protagonist?
-  [ent]
-  (= :prot ent))
-
-;; Won't be consistent (wrt concurrency) in current version
-(defn status
-  [c]
-  (cond
-    (some #(protagonist? %) @c) :prot
-    :default                    :empty))
+(defn has?
+  [c kind]
+  (some #(:kind %) @c))
 
