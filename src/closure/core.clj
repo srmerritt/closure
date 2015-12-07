@@ -17,15 +17,12 @@
   [grid  [x y]]
   (not (contains? #{nil :oob} (get-in grid [x y]))))
 
-(defn protagonist?
-  [p]
-  false)
-
 ;; Main overworld
 (def mploc [1 1])
-(def mgrid [[:oob (cell/+) (cell/+) (cell/+) :oob]
-            [(cell/+) (cell/+) (cell/+) (cell/+) (cell/+)]
-            [:oob (cell/+) (cell/+) (cell/+) :oob]])
+(def mprot :prot)
+(def mgrid [[:oob (cell/new) (cell/new) (cell/new) :oob]
+            [(cell/new) (cell/new :prot) (cell/new) (cell/new) (cell/new)]
+            [:oob (cell/new) (cell/new) (cell/new) :oob]])
 
 (defmulti cell-status identity)
 (defmethod cell-status :oob [_]
@@ -34,26 +31,26 @@
   (cell/status c))
 
 (defn draw
-  [grid screen [px py] off]
+  [grid screen off]
   (let [rows (map vector (iterate inc 0) grid)
         [x y] off]
     (doseq [[offset row] rows]
       (s/put-string screen
                     x (+ offset y)
-                    (apply str (map (comp sigil cell-status) row))))
-    ;; XXX protagonist drawn on top
-    (s/put-string screen
-                  (+ py x) (+ px y) "@")))
+                    (apply str (map (comp sigil cell-status) row))))))
 
-;; Returns the new grid, new ploc
+;; Returns the new loc
 (defn move
-  [dir grid loc]
-  (let [newloc (mapv + (dir directions) loc)]
+  [dir grid loc ent]
+  (let [newloc (mapv + (dir directions) loc)
+        oldcell (get-in grid loc)
+        newcell (get-in grid newloc)]
     (cond
-      (inbounds? grid newloc) [grid
-                               newloc]
-      :default                [grid
-                               loc])))
+      (inbounds? grid newloc) (do
+                                (cell/exit oldcell ent)
+                                (cell/enter newcell ent)
+                                newloc)
+      :default                loc)))
 
 (defn getch [screen]
   (let [c (s/get-key-blocking screen)]
@@ -66,17 +63,17 @@
   (s/redraw screen)
   (Thread/sleep 1000))
 
-
-(defn main [screen-type]
+(defn main
+  [screen-type]
   (let [screen (s/get-screen screen-type)]
     (s/in-screen screen
                  (loop [[grid ploc :as state] [mgrid mploc]]
-                   (draw grid screen ploc [0 0])
+                   (draw grid screen [0 0])
                    (s/redraw screen)
                    (let [c (getch screen)]
                      (cond
                        (= c :escape)            (quit screen)
-                       (contains? directions c) (recur (move c grid ploc))
+                       (contains? directions c) (recur [grid (move c grid ploc mprot)])
                        :else                    (recur state)))))))
 
 (defn -main [& args]
