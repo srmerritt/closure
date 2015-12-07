@@ -1,11 +1,7 @@
 (ns closure.core
   (:require [lanterna.screen :as s]
-            [clojure.tools.logging :as log]))
-
-(defn getch [screen]
-  (let [c (s/get-key-blocking screen)]
-    (log/info "got char " c)
-    c))
+            [clojure.tools.logging :as log]
+            [closure.cell :as cell]))
 
 (def sigil {:oob   " ",
             :empty ".",
@@ -22,18 +18,22 @@
   (and (< x mx) (>= x 0) (< y my) (>= y 0)
        (not= :oob (get-in grid [x y]))))
 
+(defn protagonist?
+  [p]
+  false)
+
 ;; Main overworld
 (def mploc [1 1])
 (def mbounds [3 5])
-(def mgrid [[:oob :empty :empty :empty :oob]
-            [:empty :empty :empty :empty :empty]
-            [:oob :empty :empty :empty :oob]])
+(def mgrid [[:oob (cell/+) (cell/+) (cell/+) :oob]
+            [(cell/+) (cell/+) (cell/+) (cell/+) (cell/+)]
+            [:oob (cell/+) (cell/+) (cell/+) :oob]])
 
-(defn quit
-  [screen]
-  (s/put-string screen 0 2 "BYE")
-  (s/redraw screen)
-  (Thread/sleep 1000))
+(defmulti cell-status identity)
+(defmethod cell-status :oob [_]
+  :oob)
+(defmethod cell-status :default [c]
+  (cell/status c))
 
 (defn draw
   [grid screen [px py] off]
@@ -42,7 +42,7 @@
     (doseq [[offset row] rows]
       (s/put-string screen
                     x (+ offset y)
-                    (apply str (map sigil row))))
+                    (apply str (map (comp sigil cell-status) row))))
     ;; XXX protagonist drawn on top
     (s/put-string screen
                   (+ py x) (+ px y) "@")))
@@ -57,6 +57,17 @@
       :default                       [grid
                                       loc])))
 
+(defn getch [screen]
+  (let [c (s/get-key-blocking screen)]
+    (log/info "got char " c)
+    c))
+
+(defn quit
+  [screen]
+  (s/put-string screen 0 2 "BYE")
+  (s/redraw screen)
+  (Thread/sleep 1000))
+
 
 (defn main [screen-type]
   (let [screen (s/get-screen screen-type)]
@@ -66,9 +77,9 @@
                    (s/redraw screen)
                    (let [c (getch screen)]
                      (cond
-                       (= c :escape) (quit screen)
+                       (= c :escape)            (quit screen)
                        (contains? directions c) (recur (move c grid mbounds ploc))
-                       :else (recur state)))))))
+                       :else                    (recur state)))))))
 
 (defn -main [& args]
   (let [args (set args)
