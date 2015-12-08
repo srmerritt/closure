@@ -1,7 +1,8 @@
 (ns closure.core
   (:require [lanterna.screen :as s]
             [clojure.tools.logging :as log]
-            [closure.cell :as cell]))
+            [closure.cell :as cell]
+            [closure.dungeon :as dungeon]))
 
 (def sigil {:oob   " ",
             :empty ".",
@@ -20,9 +21,17 @@
 ;; Main overworld
 (def mploc [1 1])
 (def mprot {:kind :prot})
-(def mgrid [[:oob (cell/new) (cell/new) (cell/new) :oob]
-            [(cell/new) (cell/new mprot) (cell/new) (cell/new) (cell/new)]
-            [:oob (cell/new) (cell/new) (cell/new) :oob]])
+
+(def grid-info
+  {:width 50
+   :height 50})
+
+(defn place-prot []
+  (let [[filled-indices dungeon] (dungeon/generate-dungeon
+                                   (:height grid-info)
+                                   (:width grid-info))
+        random-start (rand-nth (seq filled-indices))]
+      [random-start (assoc-in dungeon random-start (cell/new mprot))]))
 
 (defmulti cell-status identity)
 (defmethod cell-status :oob [_]
@@ -67,7 +76,8 @@
 
 (defn main
   [screen-type]
-  (let [screen (s/get-screen screen-type)]
+  (let [screen (s/get-screen screen-type)
+        [mploc mgrid] (place-prot)]
     (s/in-screen screen
                  (loop [[grid ploc :as state] [mgrid mploc]]
                    (draw grid screen [0 0])
