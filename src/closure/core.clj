@@ -1,6 +1,12 @@
 (ns closure.core
-  (:require [closure.cell :as cell]
-            [closure.ui :as ui]))
+  (:require
+    [closure.cell :as cell]
+    [closure.ui :as ui]
+    [closure.dungeon :as dungeon]))
+
+(def sigil {:oob   " ",
+            :empty ".",
+            :prot  "@"})
 
 ;; Gross: indexing into a 2d array yields [y, x] ordering
 (def directions {:left [0 -1],
@@ -15,9 +21,17 @@
 ;; Main overworld
 (def mploc [1 1])
 (def mprot {:kind :prot})
-(def mgrid [[:oob (cell/new) (cell/new) (cell/new) :oob]
-            [(cell/new) (cell/new mprot) (cell/new) (cell/new) (cell/new)]
-            [:oob (cell/new) (cell/new) (cell/new) :oob]])
+
+(def grid-info
+  {:width 50
+   :height 50})
+
+(defn place-prot []
+  (let [[filled-indices dungeon] (dungeon/generate-dungeon
+                                   (:height grid-info)
+                                   (:width grid-info))
+        random-start (rand-nth (seq filled-indices))]
+      [random-start (assoc-in dungeon random-start (cell/new mprot))]))
 
 ;; Returns the new loc
 (defn move
@@ -34,14 +48,18 @@
 
 (defn main
   [screen-type]
-  (closure.ui/init screen-type)
-  (loop [[grid ploc :as state] [mgrid mploc]]
-    (closure.ui/redraw [[grid [0 1]]])
-    (let [c (closure.ui/getch)]
-      (cond
-        (= c :escape)            (closure.ui/quit)
-        (contains? directions c) (recur [grid (move c grid ploc mprot)])
-        :else                    (recur state)))))
+    (ui/init screen-type)
+    (let [[mploc mgrid] (place-prot)]
+      (loop [[grid ploc :as state] [mgrid mploc]]
+        (ui/clear-screen)
+        (ui/draw-border)
+        (ui/draw-grid
+        (ui/redraw grid [0 1])
+        (let [c (ui/getch)]
+          (cond
+            (= c :escape)            (ui/quit)
+            (contains? directions c) (recur [grid (move c grid ploc mprot)])
+            :else                    (recur state)))))))
 
 (defn -main [& args]
   (let [args (set args)
