@@ -68,10 +68,10 @@
                      (apply str (repeat (- num-cols 2) "-"))
                      "."))
   ;; Text box separator bar
-  (s/put-string scr 1 num-rows
+  (s/put-string scr 1 top-rows
                 (apply str (repeat (- num-cols 2) "-")))
   ;; Bottom bar
-  (s/put-string scr 0 top-rows
+  (s/put-string scr 0 (- num-rows 1)
                 (str "'"
                      (apply str (repeat (- num-cols 2) "-"))
                      "'"))
