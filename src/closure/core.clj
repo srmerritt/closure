@@ -36,10 +36,7 @@
   [screen-type]
   (closure.ui/init screen-type)
   (loop [[grid ploc :as state] [mgrid mploc]]
-    (closure.ui/clear-screen)
-    (closure.ui/draw-border)
-    (closure.ui/draw-grid grid [0 1])
-    (closure.ui/redraw)
+    (closure.ui/redraw [[grid [0 1]]])
     (let [c (closure.ui/getch)]
       (cond
         (= c :escape)            (closure.ui/quit)
