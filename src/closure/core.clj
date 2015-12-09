@@ -34,12 +34,12 @@
 
 (defn main
   [screen-type]
-  (closure.ui/init screen-type)
+  (ui/init screen-type)
   (loop [[grid ploc :as state] [mgrid mploc]]
-    (closure.ui/redraw [[grid [0 1]]])
-    (let [c (closure.ui/getch)]
+    (ui/redraw grid)
+    (let [c (ui/getch)]
       (cond
-        (= c :escape)            (closure.ui/quit)
+        (= c :escape)            (ui/quit)
         (contains? directions c) (recur [grid (move c grid ploc mprot)])
         :else                    (recur state)))))
 
