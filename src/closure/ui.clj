@@ -3,12 +3,17 @@
             [closure.cell :as cell]))
 
 (def num-cols 80)
-(def context-cols 24)
+(def menu-cols 22)
 (def top-rows 24)
 (def num-rows 34)
 (def num-text-rows 5)
 
 (def scr)
+
+;; Util: [x y z] -> [[0 x] [1 y] [2 z]]
+(defn with-ids
+  [coll]
+  (map vector (iterate inc 0) coll))
 
 ;; Text buffer.
 ;; put-text writes to the text buffer displayed under the world grid.
@@ -18,6 +23,28 @@
   (dosync
     (commute textbuf conj line)))
 
+;; Context menu.
+;; put-context writes to the menu on the left of the screen. Takes a seq of
+;; strings.
+(def menu (ref []))
+
+(defn draw-menu
+  []
+  ;; XXX paging
+  (doseq [[i line] (with-ids @menu)]
+    (s/put-string scr 1 (inc i) line)))
+
+(defn put-menu
+  [lines]
+  (dosync
+    (ref-set menu (map (fn [l] (if (>= (count l) menu-cols)
+                                 (str (subs l 0 (- menu-cols 2)) "..")
+                                 l))
+                       lines)))
+  (draw-menu))
+
+(defn clear-menu [] (put-menu []))
+
 (defn init
   [screen-type]
   (def scr (s/get-screen screen-type))
@@ -26,15 +53,11 @@
   (s/get-key scr)
   (s/redraw scr))
 
-;; Util: [x y z] -> [[0 x] [1 y] [2 z]]
-(defn with-ids
-  [coll]
-  (map vector (iterate inc 0) coll))
-
 ;; Cell drawing
 (def sigil {:oob   " ",
             :empty ".",
-            :prot  "@"})
+            :prot  "@",
+            :item  "?"})
 
 (defmulti cell-status identity)
 (defmethod cell-status :oob [_]
@@ -42,6 +65,7 @@
 (defmethod cell-status :default [c]
   (cond
     (cell/has? c :prot) :prot
+    (cell/has? c :item) :item
     :default            :empty))
 
 ;; Draw overworld. Offset here is relative to the overworld window position,
@@ -52,7 +76,7 @@
         [x y] off]
     (doseq [[offset row] rows]
       (s/put-string scr
-                    (+ context-cols x) (+ offset y)
+                    (+ menu-cols x 2) (+ offset y)
                     (apply str (map (comp sigil cell-status) row))))))
 
 (defn draw-text
@@ -79,7 +103,7 @@
   (doseq [row (range 1 (- num-rows 1))]
     (s/put-string scr 0 row "|")
     (when (< row top-rows)
-      (s/put-string scr (- context-cols 1) row "|"))
+      (s/put-string scr (inc menu-cols) row "|"))
     (s/put-string scr (- num-cols 1) row "|")))
 
 ;; Main function for redrawing everything. Expects a seq of input to draw-grid,
@@ -88,6 +112,7 @@
   [grids]
   (s/clear scr)
   (draw-border)
+  (draw-menu)
   (draw-text)
   (doseq [g grids] (apply draw-grid g))
   (s/redraw scr))
