@@ -120,7 +120,7 @@
     c))
 
 (defn quit
-  []
+  [_]
   (put-text "come")
   (put-text "again")
   (put-text "soon")
@@ -129,4 +129,5 @@
   (Thread/sleep 1000)
   (s/clear scr)
   (s/redraw scr)
-  (s/stop scr))
+  (s/stop scr)
+  :exit)
