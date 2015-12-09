@@ -68,16 +68,13 @@
     (cell/has? c :item) :item
     :default            :empty))
 
-;; Draw overworld. Offset here is relative to the overworld window position,
-;; which is managed internally by closure.ui.
+;; Draw overworld.
 (defn draw-grid
-  [grid off]
-  (let [rows (with-ids grid)
-        [x y] off]
-    (doseq [[offset row] rows]
-      (s/put-string scr
-                    (+ menu-cols x 2) (+ offset y)
-                    (apply str (map (comp sigil cell-status) row))))))
+  [grid]
+  (doseq [[offset row] (with-ids grid)]
+    (s/put-string scr
+                  (+ menu-cols 2) (+ offset 1)
+                  (apply str (map (comp sigil cell-status) row)))))
 
 (defn draw-text
   []
@@ -109,12 +106,12 @@
 ;; Main function for redrawing everything. Expects a seq of input to draw-grid,
 ;; i.e. for rendering multiple grids to the screen.
 (defn redraw
-  [grids]
+  [grid]
   (s/clear scr)
   (draw-border)
   (draw-menu)
   (draw-text)
-  (doseq [g grids] (apply draw-grid g))
+  (draw-grid grid)
   (s/redraw scr))
 
 (defn getch
