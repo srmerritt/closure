@@ -19,5 +19,4 @@
 
 (defn has?
   [c kind]
-  (some #(:kind %) @c))
-
+  (some #(= kind (:kind %)) @c))
