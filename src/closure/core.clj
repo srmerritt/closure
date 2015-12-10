@@ -1,47 +1,36 @@
 (ns closure.core
   (:require [closure.cell :as cell]
+            [closure.cmd :as cmd]
             [closure.ui :as ui]))
 
-;; Gross: indexing into a 2d array yields [y, x] ordering
-(def directions {:left [0 -1],
-                 :right [0 1],
-                 :up [-1 0],
-                 :down [1 0]})
-
-(defn inbounds?
-  [grid  [x y]]
-  (not (contains? #{nil :oob} (get-in grid [x y]))))
+(def overworld-mode {:left cmd/left
+                     :right cmd/right
+                     :up cmd/up
+                     :down cmd/down
+                     :escape ui/quit
+                     })
 
 ;; Main overworld
-(def mploc [1 1])
-(def mprot {:kind :prot})
-(def mgrid [[:oob (cell/new) (cell/new) (cell/new) :oob]
-            [(cell/new) (cell/new mprot) (cell/new) (cell/new) (cell/new)]
-            [:oob (cell/new) (cell/new) (cell/new) :oob]])
-
-;; Returns the new loc
-(defn move
-  [dir grid loc ent]
-  (let [newloc (mapv + (dir directions) loc)
-        oldcell (get-in grid loc)
-        newcell (get-in grid newloc)]
-    (cond
-      (inbounds? grid newloc) (do
-                                (cell/exit oldcell ent)
-                                (cell/enter newcell ent)
-                                newloc)
-      :default                loc)))
+(def gprot {:kind :prot})
+(def gstate {:pos [1 1]
+             :prot gprot
+             :grid [[:oob (cell/new) (cell/new) (cell/new) :oob]
+                    [(cell/new) (cell/new gprot) (cell/new) (cell/new) (cell/new)]
+                    [:oob (cell/new) (cell/new) (cell/new) :oob]]
+             :mode overworld-mode
+             })
 
 (defn main
   [screen-type]
   (ui/init screen-type)
-  (loop [[grid ploc :as state] [mgrid mploc]]
-    (ui/redraw grid)
-    (let [c (ui/getch)]
+  (loop [state gstate]
+    (ui/redraw (:grid state))
+    (let [c (ui/getch)
+          fun ((:mode state) c)
+          state2 (if (nil? fun) state (apply fun [state]))]
       (cond
-        (= c :escape)            (ui/quit)
-        (contains? directions c) (recur [grid (move c grid ploc mprot)])
-        :else                    (recur state)))))
+        (= :exit state2) nil
+        :else            (recur state2)))))
 
 (defn -main [& args]
   (let [args (set args)
