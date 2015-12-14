@@ -1,6 +1,7 @@
 (ns closure.core
   (:require [closure.cell :as cell]
             [closure.cmd :as cmd]
+            [closure.item :as item]
             [closure.ui :as ui]))
 
 (def overworld-mode {:left cmd/left
@@ -8,15 +9,23 @@
                      :up cmd/up
                      :down cmd/down
                      :escape ui/quit
+                     \i cmd/inventory
+                     \g cmd/get-room
                      })
 
 ;; Main overworld
-(def gprot {:kind :prot})
+(def gprot {:kind :prot
+            :bag (item/new-bag)
+            :name "joe"})
+
+(def sword {:kind :item
+            :name "sword"})
+
 (def gstate {:pos [1 1]
              :prot gprot
              :grid [[:oob (cell/new) (cell/new) (cell/new) :oob]
                     [(cell/new) (cell/new gprot) (cell/new) (cell/new) (cell/new)]
-                    [:oob (cell/new) (cell/new) (cell/new) :oob]]
+                    [:oob (cell/new sword) (cell/new) (cell/new) :oob]]
              :mode overworld-mode
              })
 

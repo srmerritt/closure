@@ -12,13 +12,17 @@
   (dosync
     (commute bag conj thing)))
 
+(defn iter-bag
+  [bag]
+  (seq @bag))
+
 (defn vec-remove
   [coll pos]
   (vec (concat (subvec coll 0 pos) (subvec coll (inc pos)))))
 
 (defn take-bag
   [bag pos]
-  (let [thing (get bag pos)]
+  (let [thing (get @bag pos)]
     (cond
       (nil? thing) nil
       :default     (dosync
